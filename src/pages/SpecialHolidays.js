@@ -99,7 +99,7 @@ export default function SpecialHolidays() {
     try {
       setLoading(true);
       const year = currentDate.getFullYear();
-      const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/holiday/year/${year}`);
+      const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/specialHolidays/year/${year}`);
       setHolidays(response.data);
       setFilteredHolidays(response.data);
     } catch (error) {
@@ -134,11 +134,11 @@ export default function SpecialHolidays() {
     try {
       if (selectedHoliday) {
         // Update existing holiday
-        await axios.put(`${process.env.REACT_APP_API_BASE_URL}/api/holiday/${selectedHoliday.id}`, formData);
+        await axios.put(`${process.env.REACT_APP_API_BASE_URL}/api/specialHolidays/${selectedHoliday.id}`, formData);
         alert('Holiday updated successfully!');
       } else {
         // Create new holiday
-        await axios.post(`${process.env.REACT_APP_API_BASE_URL}/api/holiday`, formData);
+        await axios.post(`${process.env.REACT_APP_API_BASE_URL}/api/specialHolidays`, formData);
         alert('Holiday created successfully!');
       }
       setIsModalOpen(false);
@@ -159,7 +159,7 @@ export default function SpecialHolidays() {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`${process.env.REACT_APP_API_BASE_URL}/api/holiday/${selectedHoliday.id}`);
+      await axios.delete(`${process.env.REACT_APP_API_BASE_URL}/api/specialHolidays/${selectedHoliday.id}`);
       alert('Holiday deleted successfully!');
       setIsDeleteModalOpen(false);
       setSelectedHoliday(null);

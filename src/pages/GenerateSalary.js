@@ -880,7 +880,7 @@ export default function GenerateSalary() {
     const fetchEmployees = async () => {
       try {
         setEmployeeLoading(true);
-        const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/employe`);
+        const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/employees`);
         setEmployees(res.data || []);
       } catch (err) {
         showMessage("Failed to load employees", "error");
@@ -931,7 +931,7 @@ export default function GenerateSalary() {
       try {
         setHolidayLoading(true);
         const res = await axios.get(
-          `${process.env.REACT_APP_API_BASE_URL}/api/holiday/countnonweekend`,
+          `${process.env.REACT_APP_API_BASE_URL}/api/specialHolidays/countnonweekend`,
           { 
             params: { 
               startDate: fromDate,

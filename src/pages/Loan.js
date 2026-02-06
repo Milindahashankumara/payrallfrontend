@@ -50,7 +50,7 @@ export default function Loan() {
       setEmployeeLoading(true);
       // Try different API endpoints that might return employees
       const endpoints = [
-        `${process.env.REACT_APP_API_BASE_URL}/api/employe`
+        `${process.env.REACT_APP_API_BASE_URL}/api/employees`
       ];
       
       let employeesData = [];

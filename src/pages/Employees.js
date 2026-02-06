@@ -55,7 +55,7 @@ export default function Employees() {
 
 const fetchDepartments = async () => {
   try {
-    const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/department`);
+    const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/departments`);
     setDepartments(res.data);
   } catch (err) {
     console.error("Error fetching departments", err);
@@ -64,7 +64,7 @@ const fetchDepartments = async () => {
 
 const fetchEmployeeCategories = async () => {
   try {
-    const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/employeecategories`);
+    const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/empcategories`);
     setEmployeeCategories(res.data);
   } catch (err) {
     console.error("Error fetching employee categories", err);
@@ -83,8 +83,8 @@ const fetchEmployeeCategories = async () => {
     try {
       setLoading(true);
       const endpoint = isViewDeleted 
-        ? `${process.env.REACT_APP_API_BASE_URL}/api/employe/getAllDeletedEmployees`
-        : `${process.env.REACT_APP_API_BASE_URL}/api/employe`;
+        ? `${process.env.REACT_APP_API_BASE_URL}/api/employees/getAllDeletedEmployees`
+        : `${process.env.REACT_APP_API_BASE_URL}/api/employees`;
       
       const res = await axios.get(endpoint);
       setEmployees(res.data);
@@ -99,9 +99,8 @@ const fetchEmployeeCategories = async () => {
   const fetchEmployeeById = async (id) => {
     try {
       const endpoint = isViewDeleted 
-        ? `${process.env.REACT_APP_API_BASE_URL}/api/employe/getDeletedEmployeeById/${id}`
-        : `${process.env.REACT_APP_API_BASE_URL}/api/employe/${id}`;
-      
+        ? `${process.env.REACT_APP_API_BASE_URL}/api/employees/getDeletedEmployeeById/${id}`
+        : `${process.env.REACT_APP_API_BASE_URL}/api/employees/${id}`;
       const res = await axios.get(endpoint);
       setSelectedEmployee(res.data);
       setIsModalOpen(true);
@@ -180,7 +179,7 @@ const fetchEmployeeCategories = async () => {
       };
       
       await axios.put(
-        `${process.env.REACT_APP_API_BASE_URL}/api/employe/${editEmployee.id}`,
+        `${process.env.REACT_APP_API_BASE_URL}/api/employees/${editEmployee.id}`,
         employeeToUpdate
       );
       setEmployees(prev => prev.map(emp => emp.id === editEmployee.id ? employeeToUpdate : emp));
@@ -236,7 +235,7 @@ const fetchEmployeeCategories = async () => {
     console.log("Sending employee data:", employeeToCreate);
     
     const res = await axios.post(
-      `${process.env.REACT_APP_API_BASE_URL}/api/employe`,
+      `${process.env.REACT_APP_API_BASE_URL}/api/employees`,
       employeeToCreate
     );
     
@@ -317,7 +316,7 @@ const terminateEmployee = async () => {
   
   try {
     const response = await axios.delete(
-      `${process.env.REACT_APP_API_BASE_URL}/api/employe/${employeeToTerminate.id}`,
+      `${process.env.REACT_APP_API_BASE_URL}/api/employees/${employeeToTerminate.id}`,
       {
         data: {
           terminationDate: new Date(terminationDate).toISOString(),
@@ -344,7 +343,7 @@ const terminateEmployee = async () => {
 const deleteEmployee = async (id) => {
   if (!window.confirm("Are you sure you want to permanently delete this employee?")) return;
   try {
-    await axios.delete(`${process.env.REACT_APP_API_BASE_URL}/api/employe/${id}`);
+    await axios.delete(`${process.env.REACT_APP_API_BASE_URL}/api/employees/${id}`);
     setEmployees(prev => prev.filter(emp => emp.id !== id));
     showMessage("Employee permanently deleted!", "success");
   } catch (err) {
@@ -355,7 +354,7 @@ const deleteEmployee = async (id) => {
 
   const recoverEmployee = async (id) => {
     try {
-      await axios.put(`${process.env.REACT_APP_API_BASE_URL}/api/employe/recoverDeletedEmployee/${id}`);
+      await axios.put(`${process.env.REACT_APP_API_BASE_URL}/api/employees/recoverDeletedEmployee/${id}`);
       setEmployees(prev => prev.filter(emp => emp.id !== id));
       showMessage("Employee recovered successfully!", "success");
     } catch (err) {

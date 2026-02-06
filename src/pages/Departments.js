@@ -40,7 +40,7 @@ export default function Departments() {
   const fetchEmployeeCategories = async () => {
     try {
       const res = await axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/api/employeecategories`
+        `${process.env.REACT_APP_API_BASE_URL}/api/empcategories`
       );
       setEmployeeCategories(res.data);
     } catch (err) {
@@ -51,7 +51,7 @@ export default function Departments() {
   const fetchDepartmentById = async (id) => {
     try {
       const res = await axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/api/department/${id}`
+        `${process.env.REACT_APP_API_BASE_URL}/api/departments/${id}`
       );
       setSelectedDept(res.data);
       setIsModalOpen(true);
@@ -83,7 +83,7 @@ export default function Departments() {
       };
       
       await axios.put(
-        `${process.env.REACT_APP_API_BASE_URL}/api/department/${editDept.id}`,
+        `${process.env.REACT_APP_API_BASE_URL}/api/departments/${editDept.id}`,
         payload
       );
       
@@ -105,7 +105,7 @@ export default function Departments() {
       return;
     try {
       await axios.delete(
-        `${process.env.REACT_APP_API_BASE_URL}/api/department/${id}`
+        `${process.env.REACT_APP_API_BASE_URL}/api/departments/${id}`
       );
       setDepartments((prev) => prev.filter((d) => d.id !== id));
     } catch (err) {
@@ -131,7 +131,7 @@ export default function Departments() {
       };
       
       const res = await axios.post(
-        `${process.env.REACT_APP_API_BASE_URL}/api/department`,
+        `${process.env.REACT_APP_API_BASE_URL}/api/departments`,
         payload
       );
       

@@ -37,7 +37,7 @@ export default function Leaves() {
     try {
       setEmployeeLoading(true);
       // Use the specific endpoint for employees who can have leaves
-      const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/employe/employeeshaveleaves`);
+      const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/employees/employeeshaveleaves`);
       setEmployees(response.data);
     } catch (error) {
       console.error('Error fetching employees with leaves:', error);

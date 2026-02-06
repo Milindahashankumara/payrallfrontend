@@ -15,7 +15,7 @@ export default function EmployeeCategories() {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/EmployeeCategories`);
+      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/empcategories`);
       setCategories(res.data);
     } catch (err) {
       console.error('Error fetching categories', err);
@@ -24,7 +24,7 @@ export default function EmployeeCategories() {
 
   const fetchCategoryById = async (id) => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/EmployeeCategories/${id}`);
+      const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/empcategories/${id}`);
       setSelectedCategory(res.data);
       setIsModalOpen(true);
     } catch (err) {
@@ -49,7 +49,7 @@ export default function EmployeeCategories() {
     try {
       if (editCategory.id) {
         await axios.put(
-          `${process.env.REACT_APP_API_BASE_URL}/api/EmployeeCategories/${editCategory.id}`,
+          `${process.env.REACT_APP_API_BASE_URL}/api/empcategories/${editCategory.id}`,
           editCategory
         );
         setCategories((prev) =>
@@ -57,7 +57,7 @@ export default function EmployeeCategories() {
         );
       } else {
         const res = await axios.post(
-          `${process.env.REACT_APP_API_BASE_URL}/api/EmployeeCategories`,
+          `${process.env.REACT_APP_API_BASE_URL}/api/empcategories`,
           editCategory
         );
         setCategories((prev) => [...prev, res.data]);
@@ -71,7 +71,7 @@ export default function EmployeeCategories() {
   const deleteCategory = async (id) => {
     if (!window.confirm('Are you sure you want to delete this category?')) return;
     try {
-      await axios.delete(`${process.env.REACT_APP_API_BASE_URL}/api/EmployeeCategories/${id}`);
+      await axios.delete(`${process.env.REACT_APP_API_BASE_URL}/api/empcategories/${id}`);
       setCategories((prev) => prev.filter((cat) => cat.id !== id));
     } catch (err) {
       console.error('Error deleting category', err);
