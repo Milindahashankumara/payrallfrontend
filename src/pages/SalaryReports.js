@@ -1792,7 +1792,7 @@ export default function SalaryReports() {
             )}
             {!report.isDaySalaryBased && (
               <>
-                <p><span className="font-medium">Basic Stationary Salary:</span> {formatCurrency(report.basicStationarySal)}</p>
+                <p><span className="font-medium">Basic Statutory Salary:</span> {formatCurrency(report.basicStationarySal)}</p>
                 <p><span className="font-medium">BRA 1:</span> {formatCurrency(report.bra1)}</p>
                 <p><span className="font-medium">BRA 2:</span> {formatCurrency(report.bra2)}</p>
                 <p><span className="font-medium">Basic Salary:</span> {formatCurrency(report.basicSala)}</p>
@@ -2361,7 +2361,7 @@ export default function SalaryReports() {
                   
                   {!selectedReport.isDaySalaryBased && (
                     <>
-                      <p><span className="font-medium">Basic Stationary Salary:</span> {formatCurrency(selectedReport.basicStationarySal)}</p>
+                      <p><span className="font-medium">Basic Statutory Salary:</span> {formatCurrency(selectedReport.basicStationarySal)}</p>
                       <p><span className="font-medium">BRA 1:</span> {formatCurrency(selectedReport.bra1)}</p>
                       <p><span className="font-medium">BRA 2:</span> {formatCurrency(selectedReport.bra2)}</p>
                       <p><span className="font-medium">Basic Salary:</span> {formatCurrency(selectedReport.basicSala)}</p>

@@ -1025,7 +1025,7 @@ const deleteEmployee = async (id) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name & Account Holders Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
                   <input
                     type="text"
                     name="bankName"

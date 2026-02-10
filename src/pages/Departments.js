@@ -27,7 +27,7 @@ export default function Departments() {
     try {
       setLoading(true);
       const res = await axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/api/department`
+        `${process.env.REACT_APP_API_BASE_URL}/api/departments`
       );
       setDepartments(res.data);
     } catch (err) {
