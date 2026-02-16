@@ -832,34 +832,46 @@ function SearchableSelect({ items, valueId, onSelect, placeholder = "Select..." 
 }
 
 export default function GenerateSalary() {
-  // Default dates
+  // Default dates - calculate first and last day of current month
   const today = new Date();
-  const toDefault = formatDate(today);
-  const fromDefault = formatDate(sameDayPreviousMonth(today));
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1; // JavaScript months are 0-indexed
+  
+  // First day of current month
+  const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
+  // Last day of current month
+  const lastDayOfMonth = new Date(currentYear, currentMonth, 0);
+  
+  const fromDefault = formatDate(firstDayOfMonth);
+  const toDefault = formatDate(lastDayOfMonth);
 
   const [employees, setEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null); // Store selected employee details
+  const [otRates, setOtRates] = useState({ ot1Rate: 0, ot2Rate: 0 }); // Store OT rates
   const [formData, setFormData] = useState({
     employeeId: "",
-    year: today.getFullYear(),
-    month: today.getMonth() + 1,
-    workingDays: 0,
-    incentives: 0,
-    bonus: 0,
-    salaryAdvances: 0,
-    loans: 0,
-    otherDeductions: 0,
-    leaveDays: 0,
-    halfDays: 0,
-    noPayDays: 0,
-    ot1Hours: 0,
-    ot2Hours: 0,
+    year: currentYear,
+    month: currentMonth,
+    workingDays: "",
+    incentives: "",
+    bonus: "",
+    salaryAdvances: "",
+    loans: "",
+    otherDeductions: "",
+    leaveDays: "",
+    halfDays: "",
+    noPayDays: "",
+    ot1Hours: "",
+    ot2Hours: "",
     fromDate: fromDefault,
     toDate: toDefault,
-    attendanceAllowance : 0,
-    transportAllowance : 0,
-    foodAllowance : 0,
-    medicalAllowance : 0,
-    internetAllowance : 0,
+    attendanceAllowance : "",
+    transportAllowance : "",
+    foodAllowance : "",
+    medicalAllowance : "",
+    internetAllowance : "",
+    kpiRate: "",
+    kpiAmount: "",
   });
   const [generatedReport, setGeneratedReport] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -891,6 +903,57 @@ export default function GenerateSalary() {
     fetchEmployees();
   }, []);
 
+  // Fetch OT rates on component mount
+  useEffect(() => {
+    const fetchOtRates = async () => {
+      try {
+        const [ot1Res, ot2Res] = await Promise.all([
+          axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/ot/2`), // Regular OT
+          axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/ot/1`)  // Double OT
+        ]);
+        setOtRates({
+          ot1Rate: ot1Res.data?.rate || 0,
+          ot2Rate: ot2Res.data?.rate || 0
+        });
+      } catch (err) {
+        console.error("Failed to fetch OT rates:", err);
+      }
+    };
+    fetchOtRates();
+  }, []);
+
+  // Fetch selected employee details when employee changes
+  useEffect(() => {
+    const fetchEmployeeDetails = async (employeeId) => {
+      try {
+        const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/employees/${employeeId}`);
+        setSelectedEmployee(res.data);
+        
+        // Prefill KPI Amount and KPI Rate from employee record
+        setFormData((prev) => ({
+          ...prev,
+          kpiAmount: res.data.kpiAmount || "",
+          kpiRate: res.data.kpiRate || "",
+        }));
+      } catch (err) {
+        console.error("Failed to fetch employee details:", err);
+        setSelectedEmployee(null);
+      }
+    };
+    
+    if (formData.employeeId) {
+      fetchEmployeeDetails(formData.employeeId);
+    } else {
+      setSelectedEmployee(null);
+      // Clear KPI fields when no employee is selected
+      setFormData((prev) => ({
+        ...prev,
+        kpiAmount: "",
+        kpiRate: "",
+      }));
+    }
+  }, [formData.employeeId]);
+
   // Fetch active loan when employee changes
   useEffect(() => {
     const fetchActiveLoan = async (employeeId) => {
@@ -905,11 +968,11 @@ export default function GenerateSalary() {
           }));
         } else {
           setActiveLoan(null);
-          setFormData((prev) => ({ ...prev, loans: 0 }));
+          setFormData((prev) => ({ ...prev, loans: "" }));
         }
       } catch {
         setActiveLoan(null);
-        setFormData((prev) => ({ ...prev, loans: 0 }));
+        setFormData((prev) => ({ ...prev, loans: "" }));
       } finally {
         setLoanLoading(false);
       }
@@ -918,7 +981,7 @@ export default function GenerateSalary() {
       fetchActiveLoan(formData.employeeId);
     } else {
       setActiveLoan(null);
-      setFormData((prev) => ({ ...prev, loans: 0 }));
+      setFormData((prev) => ({ ...prev, loans: "" }));
     }
     // eslint-disable-next-line
   }, [formData.employeeId]);
@@ -965,8 +1028,8 @@ export default function GenerateSalary() {
         if (res.data) {
           setFormData((prev) => ({
             ...prev,
-            ot1Hours: res.data.totalOt1Hours || 0,
-            ot2Hours: res.data.totalOt2Hours || 0,
+            ot1Hours: res.data.totalOt1Hours || "",
+            ot2Hours: res.data.totalOt2Hours || "",
           }));
           // Store original values for comparison
           setOriginalOt1Hours(res.data.totalOt1Hours || 0);
@@ -975,8 +1038,8 @@ export default function GenerateSalary() {
       } catch {
         setFormData((prev) => ({
           ...prev,
-          ot1Hours: 0,
-          ot2Hours: 0,
+          ot1Hours: "",
+          ot2Hours: "",
         }));
         setOriginalOt1Hours(0);
         setOriginalOt2Hours(0);
@@ -987,6 +1050,86 @@ export default function GenerateSalary() {
     }
     // eslint-disable-next-line
   }, [formData.employeeId, formData.fromDate, formData.toDate]);
+
+  // Auto-calculate incentive for STAFF employees only
+  useEffect(() => {
+    if (!selectedEmployee) return;
+
+    // Check if employee is day-salary-based (casual) - skip calculation for them
+    const isDaySalaryBased = selectedEmployee.employeeCategories?.daySalarybased ?? false;
+    if (isDaySalaryBased) {
+      // Casual employees: incentive is manual input
+      return;
+    }
+
+    // STAFF employee: Auto-calculate incentive
+    try {
+      const totalCompensation = parseFloat(selectedEmployee.totalCompensation) || 0;
+      
+      // Calculate Basic Salary (including BRA1 + BRA2)
+      const basicSalary = (parseFloat(selectedEmployee.basicSalary) || 0) 
+                        + (parseFloat(selectedEmployee.bra1) || 0) 
+                        + (parseFloat(selectedEmployee.bra2) || 0);
+      
+      // Calculate NoPay deduction
+      const noPayDays = parseFloat(formData.noPayDays) || 0;
+      const noPay = (noPayDays * basicSalary) / 30;
+      
+      // EPF Liable Salary = Basic Salary - NoPay
+      const epfLiableSalary = basicSalary - noPay;
+      
+      // Calculate OT Payment
+      const ot1Hours = parseFloat(formData.ot1Hours) || 0;
+      const ot2Hours = parseFloat(formData.ot2Hours) || 0;
+      const ot1Payment = (basicSalary / 240) * otRates.ot1Rate * ot1Hours;
+      const ot2Payment = (basicSalary / 240) * otRates.ot2Rate * ot2Hours;
+      const totalOtPayment = ot1Payment + ot2Payment;
+      
+      // KPI Allowance - Always use user input from form data
+      const kpiAllowance = parseFloat(formData.kpiAmount) || 0;
+      
+      // Get all allowances
+      const attendanceAllowance = parseFloat(formData.attendanceAllowance) || 0;
+      const transportAllowance = parseFloat(formData.transportAllowance) || 0;
+      const foodAllowance = parseFloat(formData.foodAllowance) || 0;
+      const medicalAllowance = parseFloat(formData.medicalAllowance) || 0;
+      const internetAllowance = parseFloat(formData.internetAllowance) || 0;
+      
+      // Calculate Incentive
+      // Formula: Incentive = TotalCompensation - (TotalOTPayment + BasicSalary + KPIAllowance + Allowances)
+      const calculatedIncentive = totalCompensation 
+        - totalOtPayment 
+        - basicSalary 
+        - kpiAllowance
+        - attendanceAllowance
+        - transportAllowance
+        - foodAllowance
+        - medicalAllowance
+        - internetAllowance;
+      
+      // Clamp to 0 if negative
+      const finalIncentive = Math.max(0, calculatedIncentive);
+      
+      setFormData((prev) => ({
+        ...prev,
+        incentives: finalIncentive.toFixed(2)
+      }));
+    } catch (error) {
+      console.error("Error calculating incentive:", error);
+    }
+  }, [
+    selectedEmployee,
+    formData.ot1Hours,
+    formData.ot2Hours,
+    formData.noPayDays,
+    formData.kpiAmount,
+    formData.attendanceAllowance,
+    formData.transportAllowance,
+    formData.foodAllowance,
+    formData.medicalAllowance,
+    formData.internetAllowance,
+    otRates
+  ]);
 
   // Calculate working days when dates or holiday count changes
   useEffect(() => {
@@ -1017,7 +1160,7 @@ export default function GenerateSalary() {
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-    const val = type === "number" ? Number(value) : value;
+    const val = type === "number" ? (value === "" ? "" : Number(value)) : value;
     setFormData((prev) => ({ ...prev, [name]: val }));
   };
 
@@ -1116,9 +1259,45 @@ export default function GenerateSalary() {
     }
     setLoading(true);
     try {
+      // Convert empty strings to 0 for calculations and submission
+      const numericFormData = {
+        ...formData,
+        workingDays: formData.workingDays === "" ? 0 : Number(formData.workingDays),
+        incentives: formData.incentives === "" ? 0 : Number(formData.incentives),
+        bonus: formData.bonus === "" ? 0 : Number(formData.bonus),
+        salaryAdvances: formData.salaryAdvances === "" ? 0 : Number(formData.salaryAdvances),
+        loans: formData.loans === "" ? 0 : Number(formData.loans),
+        otherDeductions: formData.otherDeductions === "" ? 0 : Number(formData.otherDeductions),
+        leaveDays: formData.leaveDays === "" ? 0 : Number(formData.leaveDays),
+        halfDays: formData.halfDays === "" ? 0 : Number(formData.halfDays),
+        noPayDays: formData.noPayDays === "" ? 0 : Number(formData.noPayDays),
+        ot1Hours: formData.ot1Hours === "" ? 0 : Number(formData.ot1Hours),
+        ot2Hours: formData.ot2Hours === "" ? 0 : Number(formData.ot2Hours),
+        attendanceAllowance: formData.attendanceAllowance === "" ? 0 : Number(formData.attendanceAllowance),
+        transportAllowance: formData.transportAllowance === "" ? 0 : Number(formData.transportAllowance),
+        foodAllowance: formData.foodAllowance === "" ? 0 : Number(formData.foodAllowance),
+        medicalAllowance: formData.medicalAllowance === "" ? 0 : Number(formData.medicalAllowance),
+        internetAllowance: formData.internetAllowance === "" ? 0 : Number(formData.internetAllowance),
+        kpiRate: formData.kpiRate === "" ? 0 : Number(formData.kpiRate),
+        kpiAmount: formData.kpiAmount === "" ? 0 : Number(formData.kpiAmount),
+      };
+
+      // Debug logging - DETAILED
+      console.log('[DEBUG FRONTEND] ==========================================');
+      console.log('[DEBUG FRONTEND] Raw formData.kpiRate:', formData.kpiRate);
+      console.log('[DEBUG FRONTEND] Raw formData.kpiAmount:', formData.kpiAmount);
+      console.log('[DEBUG FRONTEND] Type of formData.kpiRate:', typeof formData.kpiRate);
+      console.log('[DEBUG FRONTEND] Type of formData.kpiAmount:', typeof formData.kpiAmount);
+      console.log('[DEBUG FRONTEND] Converted kpiRate:', numericFormData.kpiRate);
+      console.log('[DEBUG FRONTEND] Converted kpiAmount:', numericFormData.kpiAmount);
+      console.log('[DEBUG FRONTEND] Type after conversion kpiRate:', typeof numericFormData.kpiRate);
+      console.log('[DEBUG FRONTEND] Type after conversion kpiAmount:', typeof numericFormData.kpiAmount);
+      console.log('[DEBUG FRONTEND] Full numericFormData:', JSON.stringify(numericFormData, null, 2));
+      console.log('[DEBUG FRONTEND] ==========================================');
+
       // Check if additional OT hours were added and create records
-      const additionalOt1 = Math.max(0, formData.ot1Hours - originalOt1Hours);
-      const additionalOt2 = Math.max(0, formData.ot2Hours - originalOt2Hours);
+      const additionalOt1 = Math.max(0, numericFormData.ot1Hours - originalOt1Hours);
+      const additionalOt2 = Math.max(0, numericFormData.ot2Hours - originalOt2Hours);
       
       let otCreationResult = { success: true, createdRecords: [] };
       let otCreationMessage = "";
@@ -1135,14 +1314,27 @@ export default function GenerateSalary() {
       // Generate the salary report
       const res = await axios.post(
         `${process.env.REACT_APP_API_BASE_URL}/api/calculations/generate`,
-        formData
+        numericFormData
       );
+      
+      // Debug: Log the complete response
+      console.log('[DEBUG FRONTEND RESPONSE] ==========================================');
+      console.log('[DEBUG FRONTEND RESPONSE] Full response:', res.data);
+      console.log('[DEBUG FRONTEND RESPONSE] Response IsDaySalaryBased:', res.data.isDaySalaryBased);
+      console.log('[DEBUG FRONTEND RESPONSE] Response DaySalary:', res.data.daySalary);
+      console.log('[DEBUG FRONTEND RESPONSE] Response KPI Rate:', res.data.kpiRate);
+      console.log('[DEBUG FRONTEND RESPONSE] Response KPI Allowance:', res.data.kpiAllowance);
+      console.log('[DEBUG FRONTEND RESPONSE] Response type:', typeof res.data.kpiAllowance);
+      console.log('[DEBUG FRONTEND RESPONSE] Response Incentives:', res.data.incentives);
+      console.log('[DEBUG FRONTEND RESPONSE] Response GrossSalary:', res.data.grossSalary);
+      console.log('[DEBUG FRONTEND RESPONSE] ==========================================');
+      
       setGeneratedReport(res.data);
       
       // Handle loan repayment
       let loanMessage = "";
-      if (activeLoan && formData.loans > 0) {
-        const repaymentSuccess = await recordLoanRepayment(activeLoan.id, formData.loans);
+      if (activeLoan && numericFormData.loans > 0) {
+        const repaymentSuccess = await recordLoanRepayment(activeLoan.id, numericFormData.loans);
         if (repaymentSuccess) {
           loanMessage = " and loan repayment recorded";
         } else {
@@ -1184,12 +1376,11 @@ export default function GenerateSalary() {
     return months[month - 1] || month;
   };
 
-  const currentYear = today.getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
   // Calculate additional hours for display
-  const additionalOt1Hours = Math.max(0, formData.ot1Hours - originalOt1Hours);
-  const additionalOt2Hours = Math.max(0, formData.ot2Hours - originalOt2Hours);
+  const additionalOt1Hours = Math.max(0, (formData.ot1Hours === "" ? 0 : Number(formData.ot1Hours)) - originalOt1Hours);
+  const additionalOt2Hours = Math.max(0, (formData.ot2Hours === "" ? 0 : Number(formData.ot2Hours)) - originalOt2Hours);
 
   return (
     <div className="min-h-screen p-6 bg-gray-50">
@@ -1244,39 +1435,57 @@ export default function GenerateSalary() {
                   value={`${formData.year}-${String(formData.month).padStart(2, '0')}`}
                   onChange={(e) => {
                     const [year, month] = e.target.value.split('-');
+                    const selectedYear = parseInt(year, 10);
+                    const selectedMonth = parseInt(month, 10);
+                    
+                    // Calculate first day of the month
+                    const firstDay = new Date(selectedYear, selectedMonth - 1, 1);
+                    
+                    // Calculate last day of the month (handles all month lengths including leap years)
+                    const lastDay = new Date(selectedYear, selectedMonth, 0);
+                    
+                    // Format dates as YYYY-MM-DD for input[type="date"]
+                    const fromDate = formatDate(firstDay);
+                    const toDate = formatDate(lastDay);
+                    
                     setFormData(prev => ({
                       ...prev,
-                      year: parseInt(year, 10),
-                      month: parseInt(month, 10)
+                      year: selectedYear,
+                      month: selectedMonth,
+                      fromDate: fromDate,
+                      toDate: toDate
                     }));
                   }}
-                  required
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               {/* From Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  From
+                  <span className="text-xs text-gray-500 ml-2">(Auto-filled from Year & Month)</span>
+                </label>
                 <input
                   type="date"
                   name="fromDate"
                   value={formData.fromDate}
                   onChange={handleDateChange}
-                  required
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               {/* To Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  To
+                  <span className="text-xs text-gray-500 ml-2">(Auto-filled from Year & Month)</span>
+                </label>
                 <input
                   type="date"
                   name="toDate"
                   value={formData.toDate}
                   onChange={handleDateChange}
-                  required
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1291,7 +1500,8 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   max="31"
-                  required
+                  autoComplete="off"
+                  placeholder="Enter leave days"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1306,7 +1516,8 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   max="31"
-                  required
+                  autoComplete="off"
+                  placeholder="Enter half days"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1321,14 +1532,22 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   max="31"
-                  required
+                  autoComplete="off"
+                  placeholder="Enter no pay days"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               {/* Incentives */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Incentives</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Incentives
+                  {selectedEmployee && !(selectedEmployee.employeeCategories?.daySalarybased ?? false) && (
+                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      Auto-calculated for Staff
+                    </span>
+                  )}
+                </label>
                 <input
                   type="number"
                   name="incentives"
@@ -1336,8 +1555,18 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   step="0.01"
-                  required
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  autoComplete="off"
+                  readOnly={selectedEmployee && !(selectedEmployee.employeeCategories?.daySalarybased ?? false)}
+                  placeholder={
+                    selectedEmployee && !(selectedEmployee.employeeCategories?.daySalarybased ?? false)
+                      ? "Auto-calculated"
+                      : "Enter incentive amount"
+                  }
+                  className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                    selectedEmployee && !(selectedEmployee.employeeCategories?.daySalarybased ?? false)
+                      ? "bg-gray-100 cursor-not-allowed"
+                      : ""
+                  }`}
                 />
               </div>
 
@@ -1351,7 +1580,8 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   step="0.01"
-                  required
+                  autoComplete="off"
+                  placeholder="Enter bonus amount"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1365,7 +1595,8 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   step="0.01"
-                  required
+                  autoComplete="off"
+                  placeholder="Enter attendance allowance"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1379,7 +1610,8 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   step="0.01"
-                  required
+                  autoComplete="off"
+                  placeholder="Enter transport allowance"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1393,7 +1625,8 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   step="0.01"
-                  required
+                  autoComplete="off"
+                  placeholder="Enter food allowance"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1407,7 +1640,8 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   step="0.01"
-                  required
+                  autoComplete="off"
+                  placeholder="Enter medical allowance"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1421,7 +1655,40 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   step="0.01"
-                  required
+                  autoComplete="off"
+                  placeholder="Enter internet allowance"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* KPI Rate (Casual Only) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">KPI Rate (Casual Only)</label>
+                <input
+                  type="number"
+                  name="kpiRate"
+                  value={formData.kpiRate}
+                  onChange={handleChange}
+                  min="0"
+                  step="0.01"
+                  autoComplete="off"
+                  placeholder="Enter KPI rate"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* KPI Allowance (Staff Only) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">KPI Allowance (Staff Only)</label>
+                <input
+                  type="number"
+                  name="kpiAmount"
+                  value={formData.kpiAmount}
+                  onChange={handleChange}
+                  min="0"
+                  step="0.01"
+                  autoComplete="off"
+                  placeholder="Enter KPI allowance"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1436,7 +1703,8 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   step="0.01"
-                  required
+                  autoComplete="off"
+                  placeholder="Enter salary advance amount"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1451,7 +1719,8 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   step="0.01"
-                  required
+                  autoComplete="off"
+                  placeholder="Enter other deductions"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1473,6 +1742,8 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   step="0.5"
+                  autoComplete="off"
+                  placeholder="Enter OT hours"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -1497,6 +1768,8 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   step="0.5"
+                  autoComplete="off"
+                  placeholder="Enter double OT hours"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -1543,7 +1816,7 @@ export default function GenerateSalary() {
                     )}
                   </div>
                   <div className="text-sm font-medium text-blue-800">
-                    NoPay Days: {formData.noPayDays}
+                    NoPay Days: {formData.noPayDays === "" ? 0 : formData.noPayDays}
                   </div>
 
                   <p className="text-xs text-gray-500 mt-2">
@@ -1559,7 +1832,8 @@ export default function GenerateSalary() {
                       onChange={handleChange}
                       min="0"
                       max="31"
-                      required
+                      autoComplete="off"
+                      placeholder="Working days"
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">Final working days</p>
@@ -1601,8 +1875,9 @@ export default function GenerateSalary() {
                   onChange={handleChange}
                   min="0"
                   step="0.01"
-                  required
                   disabled={!activeLoan}
+                  autoComplete="off"
+                  placeholder="Enter loan deduction amount"
                   className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                     !activeLoan ? "bg-gray-100 cursor-not-allowed" : ""
                   }`}
@@ -1629,8 +1904,82 @@ export default function GenerateSalary() {
       {/* Report Preview Modal */}
       {isModalOpen && generatedReport && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-6xl w-full max-h-screen overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Salary Report Generated Successfully</h2>
+            
+            {/* Report Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">Employee Information</h3>
+                <div className="space-y-2 text-sm">
+                  <p><span className="font-medium">Employee Number:</span> {generatedReport.employeeNumber}</p>
+                  <p><span className="font-medium">Employee Name:</span> {generatedReport.employeeName}</p>
+                  <p><span className="font-medium">Employee Category:</span> {generatedReport.categaryName}</p>
+                  <p><span className="font-medium">Department:</span> {generatedReport.departmentName}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">Salary Summary</h3>
+                <div className="space-y-2 text-sm">
+                  {!generatedReport.isDaySalaryBased && (
+                    <p><span className="font-medium">EPF Liable Salary:</span> Rs. {generatedReport.epfLiableSalary?.toLocaleString()}</p>
+                  )}
+                  <p><span className="font-medium">Gross Salary:</span> Rs. {generatedReport.grossSalary?.toLocaleString()}</p>
+                  <p><span className="font-medium">Net Salary:</span> <span className="font-semibold text-green-600">Rs. {generatedReport.netSalary?.toLocaleString()}</span></p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">Earnings</h3>
+                <div className="space-y-2 text-sm">
+                  {generatedReport.isDaySalaryBased ? (
+                    <>
+                      <p><span className="font-medium">Day Salary:</span> Rs. {generatedReport.daySalary?.toLocaleString()}</p>
+                      <p><span className="font-medium">KPI Rate:</span> Rs. {generatedReport.kpiRate?.toLocaleString()}</p>
+                      <p><span className="font-medium">Wages:</span> Rs. {generatedReport.wages?.toLocaleString()}</p>
+                      <p><span className="font-medium">KPI Allowance:</span> Rs. {generatedReport.kpiAllowance?.toLocaleString()}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p><span className="font-medium">Basic Salary:</span> Rs. {generatedReport.basicSala?.toLocaleString()}</p>
+                      <p><span className="font-medium">BRA 1:</span> Rs. {generatedReport.bra1?.toLocaleString()}</p>
+                      <p><span className="font-medium">BRA 2:</span> Rs. {generatedReport.bra2?.toLocaleString()}</p>
+                      <p><span className="font-medium">KPI Allowance:</span> <span className="font-semibold text-blue-600">Rs. {generatedReport.kpiAllowance?.toLocaleString()}</span></p>
+                      <p><span className="font-medium">Incentives:</span> <span className="font-semibold text-blue-600">Rs. {generatedReport.incentives?.toLocaleString()}</span></p>
+                      <p><span className="font-medium">OT Payment:</span> Rs. {generatedReport.totalOtPayment?.toLocaleString()}</p>
+                    </>
+                  )}
+                  <p><span className="font-medium">Bonus:</span> Rs. {generatedReport.bonus?.toLocaleString()}</p>
+                  <p><span className="font-medium">Attendance Allowance:</span> Rs. {generatedReport.attendanceAllowance?.toLocaleString()}</p>
+                  <p><span className="font-medium">Transport Allowance:</span> Rs. {generatedReport.transportAllowance?.toLocaleString()}</p>
+                  <p><span className="font-medium">Food Allowance:</span> Rs. {generatedReport.foodAllowance?.toLocaleString()}</p>
+                  <p><span className="font-medium">Medical Allowance:</span> Rs. {generatedReport.medicalAllowance?.toLocaleString()}</p>
+                  <p><span className="font-medium">Internet Allowance:</span> Rs. {generatedReport.internetAllowance?.toLocaleString()}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">Deductions</h3>
+                <div className="space-y-2 text-sm">
+                  <p><span className="font-medium">Salary Advances:</span> Rs. {generatedReport.salaryAdvances?.toLocaleString()}</p>
+                  <p><span className="font-medium">Loans:</span> Rs. {generatedReport.loans?.toLocaleString()}</p>
+                  <p><span className="font-medium">Other Deductions:</span> Rs. {generatedReport.otherDeductions?.toLocaleString()}</p>
+                  <p><span className="font-medium">Total Deductions:</span> Rs. {generatedReport.totalDeductions?.toLocaleString()}</p>
+                  {!generatedReport.isDaySalaryBased && (
+                    <>
+                      <p><span className="font-medium">No Pay:</span> Rs. {generatedReport.noPay?.toLocaleString()}</p>
+                      <p><span className="font-medium">EPF (Employee):</span> Rs. {generatedReport.epf1?.toLocaleString()}</p>
+                      <p><span className="font-medium">EPF (Employer):</span> Rs. {generatedReport.epf2?.toLocaleString()}</p>
+                      <p><span className="font-medium">ETF:</span> Rs. {generatedReport.etf?.toLocaleString()}</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            
             <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
               <button
                 onClick={() => setIsModalOpen(false)}

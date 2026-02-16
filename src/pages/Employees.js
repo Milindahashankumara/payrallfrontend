@@ -29,13 +29,11 @@ export default function Employees() {
     phoneNumber: "",
     departmentID: "",
     employeeCategoriesID: "",
-    basicSalary: 0,
-    daySalary: 0,
-    kpiRate: 0,
-    kpiAmount: 0,
-    bra1: 0,
-    totalCompensation: 0,
-    bra2: 0,
+    basicSalary: "",
+    daySalary: "",
+    bra1: "",
+    totalCompensation: "",
+    bra2: "",
     isActive: true,
     bankAccountNumber: "",
     bankName: "",
@@ -150,7 +148,7 @@ const fetchEmployeeCategories = async () => {
     if (type === 'number') {
     setNewEmployee(prev => ({
       ...prev,
-      [name]: value === '' ? 0 : Number(value)
+      [name]: value === '' ? '' : Number(value)
     }));
     return;
   }
@@ -212,8 +210,6 @@ const fetchEmployeeCategories = async () => {
       employeeCategoriesID: newEmployee.employeeCategoriesID ? parseInt(newEmployee.employeeCategoriesID) : null,
       basicSalary: newEmployee.basicSalary ? parseInt(newEmployee.basicSalary) : null,
       daySalary: newEmployee.daySalary ? parseInt(newEmployee.daySalary) : null,
-      kpiRate: newEmployee.kpiRate ? parseInt(newEmployee.kpiRate) : null,
-      kpiAmount: newEmployee.kpiAmount ? parseInt(newEmployee.kpiAmount) : null,
       bra1: newEmployee.bra1 ? parseInt(newEmployee.bra1) : null,
       bra2: newEmployee.bra2 ? parseInt(newEmployee.bra2) : null,
       totalCompensation: newEmployee.totalCompensation ? parseInt(newEmployee.totalCompensation) : null,
@@ -254,13 +250,11 @@ const fetchEmployeeCategories = async () => {
       phoneNumber: "",
       departmentID: "",
       employeeCategoriesID: "",
-      basicSalary: 0,
-      daySalary: 0,
-      kpiRate: 0,
-      totalCompensation: 0,
-      kpiAmount: 0,
-      bra1: 0,
-      bra2: 0,
+      basicSalary: "",
+      daySalary: "",
+      totalCompensation: "",
+      bra1: "",
+      bra2: "",
       isActive: true,
       bankAccountNumber: "",
       bankName: "",
@@ -569,6 +563,8 @@ const deleteEmployee = async (id) => {
                     name="basicSalary"
                     value={editEmployee.basicSalary || ""}
                     onChange={handleEditChange}
+                    autoComplete="off"
+                    placeholder="Enter basic salary"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -579,26 +575,8 @@ const deleteEmployee = async (id) => {
                     name="daySalary"
                     value={editEmployee.daySalary || ""}
                     onChange={handleEditChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">KPI Rate (Casual Only)</label>
-                  <input
-                    type="number"
-                    name="kpiRate"
-                    value={editEmployee.kpiRate || ""}
-                    onChange={handleEditChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">KPI Allowance (Staff Only)</label>
-                  <input
-                    type="number"
-                    name="kpiAmount"
-                    value={editEmployee.kpiAmount || ""}
-                    onChange={handleEditChange}
+                    autoComplete="off"
+                    placeholder="Enter day salary"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -609,6 +587,8 @@ const deleteEmployee = async (id) => {
                     name="bra1"
                     value={editEmployee.bra1 || ""}
                     onChange={handleEditChange}
+                    autoComplete="off"
+                    placeholder="Enter BRA 1"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -619,6 +599,8 @@ const deleteEmployee = async (id) => {
                     name="bra2"
                     value={editEmployee.bra2 || ""}
                     onChange={handleEditChange}
+                    autoComplete="off"
+                    placeholder="Enter BRA 2"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -642,7 +624,7 @@ const deleteEmployee = async (id) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name & Account Holder Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
                   <input
                     type="text"
                     name="bankName"
@@ -941,20 +923,12 @@ const deleteEmployee = async (id) => {
                     name="basicSalary"
                     value={newEmployee.basicSalary}
                     onChange={handleNewEmployeeChange}
+                    autoComplete="off"
+                    placeholder="Enter basic salary"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">KPI Allowance (Staff Only)</label>
-                  <input
-                    type="number"
-                    name="kpiAmount"
-                    value={newEmployee.kpiAmount}
-                    onChange={handleNewEmployeeChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">BRA 1 (Staff Only)</label>
                   <input
@@ -962,6 +936,8 @@ const deleteEmployee = async (id) => {
                     name="bra1"
                     value={newEmployee.bra1}
                     onChange={handleNewEmployeeChange}
+                    autoComplete="off"
+                    placeholder="Enter BRA 1"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -972,6 +948,8 @@ const deleteEmployee = async (id) => {
                     name="bra2"
                     value={newEmployee.bra2}
                     onChange={handleNewEmployeeChange}
+                    autoComplete="off"
+                    placeholder="Enter BRA 2"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -991,16 +969,8 @@ const deleteEmployee = async (id) => {
                     name="daySalary"
                     value={newEmployee.daySalary}
                     onChange={handleNewEmployeeChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">KPI Rate (Casual Only)</label>
-                  <input
-                    type="number"
-                    name="kpiRate"
-                    value={newEmployee.kpiRate}
-                    onChange={handleNewEmployeeChange}
+                    autoComplete="off"
+                    placeholder="Enter day salary"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
