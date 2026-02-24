@@ -14,6 +14,7 @@ import {
   HiCalculator,
   HiCash,
   HiDuplicate,
+  HiBriefcase,
   HiGlobe,
   HiFlag,
   HiCalendar
@@ -29,6 +30,7 @@ const LINKS = [
   { to: '/Otusage', label: 'OT Usage', Icon: HiCalculator },
   { to: '/loan', label: 'Loans', Icon: HiCash },
   { to: '/departments', label: 'Departments', Icon: HiGlobe },
+  { to: '/jobroles', label: 'Job Roles', Icon: HiBriefcase },
   { to: '/specialHolidays', label: 'Mercantile Holidays', Icon: HiCalendar },
   { to: '/empcategories', label: 'Employee Categories', Icon: HiDuplicate },
   { to: '/OT', label: 'OT Settings', Icon: HiFlag },

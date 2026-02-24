@@ -7,6 +7,7 @@ import Home from './pages/Home.js'
 import Employees from './pages/Employees.js';
 import EmployeeCategories from './pages/EmployeeCategories.js';
 import Departments from './pages/Departments.js';
+import JobRoles from './pages/JobRoles.js';
 import AppLayout from './layouts/AppLayout.js';
 import AuthLayout from './layouts/AuthLayout.js';
 import OT from './pages/OT.js';
@@ -44,6 +45,7 @@ function App() {
           <Route path="/loan" element={<Loan />} />
           <Route path="/salaryreports" element={<SalaryReports />} />
           {<Route path="/departments" element={<Departments />} />}
+          {<Route path="/jobroles" element={<JobRoles />} />}
           { <Route path="/OT" element={<OT />} /> }
           <Route path="/users" element={<Users />} />
 

@@ -17,6 +17,8 @@ export default function Employees() {
   const [isViewDeleted, setIsViewDeleted] = useState(false);
   const [editEmployee, setEditEmployee] = useState({});
   const [departments, setDepartments] = useState([]);
+  const [jobRoles, setJobRoles] = useState([]);
+  const [filteredJobRoles, setFilteredJobRoles] = useState([]);
   const [employeeCategories, setEmployeeCategories] = useState([]);
   const [newEmployee, setNewEmployee] = useState({
     employeeNumber: "",
@@ -28,6 +30,7 @@ export default function Employees() {
     terminationDate: "",
     phoneNumber: "",
     departmentID: "",
+    jobRoleId: "",
     employeeCategoriesID: "",
     basicSalary: "",
     daySalary: "",
@@ -69,6 +72,22 @@ const fetchEmployeeCategories = async () => {
   }
 };
 
+const fetchJobRolesByDepartment = async (departmentId) => {
+  if (!departmentId) {
+    setFilteredJobRoles([]);
+    return;
+  }
+  try {
+    const res = await axios.get(
+      `${process.env.REACT_APP_API_BASE_URL}/api/jobroles/department/${departmentId}`
+    );
+    setFilteredJobRoles(res.data);
+  } catch (err) {
+    console.error("Error fetching job roles", err);
+    setFilteredJobRoles([]);
+  }
+};
+
   useEffect(() => {
     fetchEmployees();
   }, [isViewDeleted]);
@@ -81,8 +100,8 @@ const fetchEmployeeCategories = async () => {
     try {
       setLoading(true);
       const endpoint = isViewDeleted 
-        ? `${process.env.REACT_APP_API_BASE_URL}/api/employees/getAllDeletedEmployees`
-        : `${process.env.REACT_APP_API_BASE_URL}/api/employees`;
+        ? `${process.env.REACT_APP_API_BASE_URL}/api/employees/getAllDeletedEmployees?pageSize=1000`
+        : `${process.env.REACT_APP_API_BASE_URL}/api/employees?pageSize=1000`;
       
       const res = await axios.get(endpoint);
       setEmployees(res.data);
@@ -100,6 +119,20 @@ const fetchEmployeeCategories = async () => {
         ? `${process.env.REACT_APP_API_BASE_URL}/api/employees/getDeletedEmployeeById/${id}`
         : `${process.env.REACT_APP_API_BASE_URL}/api/employees/${id}`;
       const res = await axios.get(endpoint);
+      
+      // Fetch all job roles to display the employee's job role name
+      if (res.data.jobRoleId) {
+        try {
+          const jobRoleRes = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/jobroles/${res.data.jobRoleId}`);
+          res.data.jobRoleName = jobRoleRes.data.roleName;
+        } catch (err) {
+          console.error("Error fetching job role", err);
+          res.data.jobRoleName = 'N/A';
+        }
+      } else {
+        res.data.jobRoleName = 'N/A';
+      }
+      
       setSelectedEmployee(res.data);
       setIsModalOpen(true);
     } catch (err) {
@@ -129,14 +162,31 @@ const fetchEmployeeCategories = async () => {
     const employeeForEdit = {
       ...employee,
       departmentID: employee.departmentID ? employee.departmentID.toString() : "",
+      jobRoleId: employee.jobRoleId ? employee.jobRoleId.toString() : "",
       employeeCategoriesID: employee.employeeCategoriesID ? employee.employeeCategoriesID.toString() : ""
     };
     setEditEmployee(employeeForEdit);
+    // Fetch job roles for the selected department
+    if (employee.departmentID) {
+      fetchJobRolesByDepartment(employee.departmentID);
+    }
     setIsEditModalOpen(true);
   };
 
   const handleEditChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
+    
+    // Handle department change - fetch job roles
+    if (name === 'departmentID') {
+      setEditEmployee(prev => ({
+        ...prev,
+        departmentID: value,
+        jobRoleId: '' // Clear job role when department changes
+      }));
+      fetchJobRolesByDepartment(value);
+      return;
+    }
+    
     setEditEmployee(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -145,6 +195,18 @@ const fetchEmployeeCategories = async () => {
 
   const handleNewEmployeeChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
+    
+    // Handle department change - fetch job roles
+    if (name === 'departmentID') {
+      setNewEmployee(prev => ({
+        ...prev,
+        departmentID: value,
+        jobRoleId: '' // Clear job role when department changes
+      }));
+      fetchJobRolesByDepartment(value);
+      return;
+    }
+    
     if (type === 'number') {
     setNewEmployee(prev => ({
       ...prev,
@@ -173,6 +235,7 @@ const fetchEmployeeCategories = async () => {
       const employeeToUpdate = {
         ...editEmployee,
         departmentID: editEmployee.departmentID ? parseInt(editEmployee.departmentID) : null,
+        jobRoleId: editEmployee.jobRoleId ? parseInt(editEmployee.jobRoleId) : null,
         employeeCategoriesID: editEmployee.employeeCategoriesID ? parseInt(editEmployee.employeeCategoriesID) : null
       };
       
@@ -196,46 +259,42 @@ const fetchEmployeeCategories = async () => {
   const createEmployee = async (e) => {
   e.preventDefault();
   try {
-    // Prepare the data exactly as the backend expects it
     const employeeToCreate = {
-      employeeNumber: newEmployee.employeeNumber || "",
-      email: newEmployee.email || "",
-      address: newEmployee.address || "",
-      fullName: newEmployee.fullName || "",
-      nic: newEmployee.nic || "",
+      employeeNumber: newEmployee.employeeNumber || null,
+      email: newEmployee.email || null,
+      address: newEmployee.address || null,
+      fullName: newEmployee.fullName || null,
+      nic: newEmployee.nic || null,
       joinedDate: newEmployee.joinedDate || null,
       terminationDate: newEmployee.terminationDate || null,
-      phoneNumber: newEmployee.phoneNumber || "",
+      phoneNumber: newEmployee.phoneNumber || null,
       departmentID: newEmployee.departmentID ? parseInt(newEmployee.departmentID) : null,
+      jobRoleId: newEmployee.jobRoleId ? parseInt(newEmployee.jobRoleId) : null,
       employeeCategoriesID: newEmployee.employeeCategoriesID ? parseInt(newEmployee.employeeCategoriesID) : null,
       basicSalary: newEmployee.basicSalary ? parseInt(newEmployee.basicSalary) : null,
       daySalary: newEmployee.daySalary ? parseInt(newEmployee.daySalary) : null,
       bra1: newEmployee.bra1 ? parseInt(newEmployee.bra1) : null,
       bra2: newEmployee.bra2 ? parseInt(newEmployee.bra2) : null,
       totalCompensation: newEmployee.totalCompensation ? parseInt(newEmployee.totalCompensation) : null,
-      isActive: Boolean(newEmployee.isActive),
-      bankAccountNumber: newEmployee.bankAccountNumber || "",
-      bankName: newEmployee.bankName || "",
-      bankBranch: newEmployee.bankBranch || "",
-      taxIdentificationNumber: newEmployee.taxIdentificationNumber || "",
-      hasTaxExemption: Boolean(newEmployee.hasTaxExemption)
+      isActive: true,
+      bankAccountNumber: newEmployee.bankAccountNumber || null,
+      bankName: newEmployee.bankName || null,
+      bankBranch: newEmployee.bankBranch || null,
+      taxIdentificationNumber: newEmployee.taxIdentificationNumber || null,
+      hasTaxExemption: newEmployee.hasTaxExemption || false
     };
-
-    // Remove null or empty values that might cause validation issues
-    Object.keys(employeeToCreate).forEach(key => {
-      if (employeeToCreate[key] === null || employeeToCreate[key] === "") {
-        delete employeeToCreate[key];
-      }
-    });
     
-    console.log("Sending employee data:", employeeToCreate);
+    console.log("Creating employee with data:", employeeToCreate);
     
     const res = await axios.post(
       `${process.env.REACT_APP_API_BASE_URL}/api/employees`,
       employeeToCreate
     );
     
-    setEmployees(prev => [...prev, res.data]);
+    console.log("Employee created successfully:", res.data);
+    console.log("Employee IsActive:", res.data.isActive);
+    
+    // Close modal first
     setIsCreateModalOpen(false);
     
     // Reset form
@@ -249,6 +308,7 @@ const fetchEmployeeCategories = async () => {
       terminationDate: "",
       phoneNumber: "",
       departmentID: "",
+      jobRoleId: "",
       employeeCategoriesID: "",
       basicSalary: "",
       daySalary: "",
@@ -262,13 +322,22 @@ const fetchEmployeeCategories = async () => {
       taxIdentificationNumber: "",
       hasTaxExemption: false
     });
+    setFilteredJobRoles([]);
     
     showMessage("Employee created successfully!", "success");
+    
+    // Refresh the employee list after a short delay
+    setTimeout(async () => {
+      console.log("Refreshing employee list...");
+      await fetchEmployees();
+      console.log("Employee list refreshed. Total employees:", employees.length);
+    }, 500);
+    
   } catch (err) {
-    console.error("Error creating employee", err);
+    console.error("Error creating employee:", err);
+    console.error("Error response:", err.response);
     
     if (err.response && err.response.data && err.response.data.errors) {
-      // Extract validation errors from the response
       const validationErrors = err.response.data.errors;
       let errorMessage = "Validation errors: ";
       
@@ -486,6 +555,28 @@ const deleteEmployee = async (id) => {
                     {departments.map((dept) => (
                       <option key={dept.id} value={dept.id}>
                         {dept.departmentName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Job Role</label>
+                  <select
+                    name="jobRoleId"
+                    value={editEmployee.jobRoleId || ""}
+                    onChange={handleEditChange}
+                    disabled={!editEmployee.departmentID}
+                    className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                      !editEmployee.departmentID ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <option value="">
+                      {editEmployee.departmentID ? 'Select Job Role' : 'Select Department First'}
+                    </option>
+                    {filteredJobRoles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.roleName}
                       </option>
                     ))}
                   </select>
@@ -844,17 +935,41 @@ const deleteEmployee = async (id) => {
                   </div> */}
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
                     <select
                       name="departmentID"
                       value={newEmployee.departmentID || ""}
                       onChange={handleNewEmployeeChange}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
                     >
                       <option value="">Select Department</option>
                       {departments.map((dept) => (
                         <option key={dept.id} value={dept.id}>
                           {dept.departmentName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Job Role *</label>
+                    <select
+                      name="jobRoleId"
+                      value={newEmployee.jobRoleId || ""}
+                      onChange={handleNewEmployeeChange}
+                      disabled={!newEmployee.departmentID}
+                      className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                        !newEmployee.departmentID ? 'bg-gray-100 cursor-not-allowed' : ''
+                      }`}
+                      required
+                    >
+                      <option value="">
+                        {newEmployee.departmentID ? 'Select Job Role' : 'Select Department First'}
+                      </option>
+                      {filteredJobRoles.map((role) => (
+                        <option key={role.id} value={role.id}>
+                          {role.roleName}
                         </option>
                       ))}
                     </select>
@@ -1406,6 +1521,7 @@ const deleteEmployee = async (id) => {
                   <p><span className="font-medium">Department:</span> {
                     departments.find(dept => dept.id === selectedEmployee.departmentID)?.departmentName || 'N/A'
                   }</p>
+                  <p><span className="font-medium">Job Role:</span> {selectedEmployee.jobRoleName || 'N/A'}</p>
                   <p><span className="font-medium">Total Compensation:</span> {
                     selectedEmployee.totalCompensation || 'N/A'
                   }</p>

@@ -892,9 +892,11 @@ export default function GenerateSalary() {
     const fetchEmployees = async () => {
       try {
         setEmployeeLoading(true);
-        const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/employees`);
+        const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/employees?pageSize=1000`);
+        console.log("Fetched employees for salary generation:", res.data.length);
         setEmployees(res.data || []);
       } catch (err) {
+        console.error("Failed to load employees:", err);
         showMessage("Failed to load employees", "error");
       } finally {
         setEmployeeLoading(false);
