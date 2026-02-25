@@ -248,8 +248,28 @@ const fetchJobRolesByDepartment = async (departmentId) => {
       showMessage("Employee updated successfully!", "success");
     } catch (err) {
       console.error("Error updating employee", err);
-      if (err.response) {
-        showMessage(`Update failed: ${JSON.stringify(err.response.data)}`, "error");
+      if (err.response && err.response.data) {
+        // Check if server returned a message property
+        if (err.response.data.message) {
+          showMessage(err.response.data.message, "error");
+        }
+        // Check for validation errors
+        else if (err.response.data.errors) {
+          const validationErrors = err.response.data.errors;
+          let errorMessage = "Validation errors: ";
+          
+          Object.keys(validationErrors).forEach(field => {
+            errorMessage += `${field}: ${validationErrors[field].join(', ')}. `;
+          });
+          
+          showMessage(errorMessage, "error");
+        }
+        // Fallback for other error formats
+        else {
+          showMessage("Failed to update employee. Please check your input.", "error");
+        }
+      } else if (err.message) {
+        showMessage(err.message, "error");
       } else {
         showMessage("Failed to update employee", "error");
       }
@@ -337,17 +357,26 @@ const fetchJobRolesByDepartment = async (departmentId) => {
     console.error("Error creating employee:", err);
     console.error("Error response:", err.response);
     
-    if (err.response && err.response.data && err.response.data.errors) {
-      const validationErrors = err.response.data.errors;
-      let errorMessage = "Validation errors: ";
-      
-      Object.keys(validationErrors).forEach(field => {
-        errorMessage += `${field}: ${validationErrors[field].join(', ')}. `;
-      });
-      
-      showMessage(errorMessage, "error");
-    } else if (err.response) {
-      showMessage(`Server error: ${JSON.stringify(err.response.data)}`, "error");
+    if (err.response && err.response.data) {
+      // Check if server returned a message property
+      if (err.response.data.message) {
+        showMessage(err.response.data.message, "error");
+      }
+      // Check for validation errors
+      else if (err.response.data.errors) {
+        const validationErrors = err.response.data.errors;
+        let errorMessage = "Validation errors: ";
+        
+        Object.keys(validationErrors).forEach(field => {
+          errorMessage += `${field}: ${validationErrors[field].join(', ')}. `;
+        });
+        
+        showMessage(errorMessage, "error");
+      }
+      // Fallback for other error formats
+      else {
+        showMessage("Failed to create employee. Please check your input.", "error");
+      }
     } else if (err.message) {
       showMessage(err.message, "error");
     } else {
