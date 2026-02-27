@@ -207,6 +207,28 @@ const fetchJobRolesByDepartment = async (departmentId) => {
       return;
     }
     
+    // Handle employee category change - clear salary fields
+    if (name === 'employeeCategoriesID') {
+      const selectedCategory = employeeCategories.find(cat => cat.id === parseInt(value));
+      const categoryName = selectedCategory?.categoryName?.toLowerCase() || '';
+      
+      setNewEmployee(prev => ({
+        ...prev,
+        employeeCategoriesID: value,
+        // Clear staff salary fields if switching to Casual
+        ...(categoryName === 'casual' && {
+          basicSalary: '',
+          bra1: '',
+          bra2: ''
+        }),
+        // Clear casual salary field if switching to Staff
+        ...(categoryName === 'staff' && {
+          daySalary: ''
+        })
+      }));
+      return;
+    }
+    
     if (type === 'number') {
     setNewEmployee(prev => ({
       ...prev,
@@ -227,7 +249,16 @@ const fetchJobRolesByDepartment = async (departmentId) => {
     ...prev,
     [name]: value
   }));
-  }, []);
+  }, [employeeCategories]);
+
+  // Determine the selected employee category type (Staff or Casual)
+  const selectedCategoryType = useMemo(() => {
+    if (!newEmployee.employeeCategoriesID) return null;
+    const selectedCategory = employeeCategories.find(
+      cat => cat.id === parseInt(newEmployee.employeeCategoriesID)
+    );
+    return selectedCategory?.categoryName?.toLowerCase() || null;
+  }, [newEmployee.employeeCategoriesID, employeeCategories]);
 
   const updateEmployee = async () => {
     try {
@@ -279,6 +310,9 @@ const fetchJobRolesByDepartment = async (departmentId) => {
   const createEmployee = async (e) => {
   e.preventDefault();
   try {
+    // Determine category type for conditional salary fields
+    const categoryType = selectedCategoryType;
+    
     const employeeToCreate = {
       employeeNumber: newEmployee.employeeNumber || null,
       email: newEmployee.email || null,
@@ -291,10 +325,12 @@ const fetchJobRolesByDepartment = async (departmentId) => {
       departmentID: newEmployee.departmentID ? parseInt(newEmployee.departmentID) : null,
       jobRoleId: newEmployee.jobRoleId ? parseInt(newEmployee.jobRoleId) : null,
       employeeCategoriesID: newEmployee.employeeCategoriesID ? parseInt(newEmployee.employeeCategoriesID) : null,
-      basicSalary: newEmployee.basicSalary ? parseInt(newEmployee.basicSalary) : null,
-      daySalary: newEmployee.daySalary ? parseInt(newEmployee.daySalary) : null,
-      bra1: newEmployee.bra1 ? parseInt(newEmployee.bra1) : null,
-      bra2: newEmployee.bra2 ? parseInt(newEmployee.bra2) : null,
+      // Only include staff salary fields if category is Staff
+      basicSalary: categoryType === 'staff' ? (newEmployee.basicSalary ? parseInt(newEmployee.basicSalary) : null) : null,
+      bra1: categoryType === 'staff' ? (newEmployee.bra1 ? parseInt(newEmployee.bra1) : null) : null,
+      bra2: categoryType === 'staff' ? (newEmployee.bra2 ? parseInt(newEmployee.bra2) : null) : null,
+      // Only include casual salary field if category is Casual
+      daySalary: categoryType === 'casual' ? (newEmployee.daySalary ? parseInt(newEmployee.daySalary) : null) : null,
       totalCompensation: newEmployee.totalCompensation ? parseInt(newEmployee.totalCompensation) : null,
       isActive: true,
       bankAccountNumber: newEmployee.bankAccountNumber || null,
@@ -1054,73 +1090,88 @@ const deleteEmployee = async (id) => {
               </div>
             </div>
 
-            {/* Salary Information Section */}
-            <div>
-              <h3 className="text-lg font-semibold mb-3 text-gray-800 border-b pb-2 flex items-center gap-2">
-                 Staff Salary Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Basic Salary (Staff Only)</label>
-                  <input
-                    type="number"
-                    name="basicSalary"
-                    value={newEmployee.basicSalary}
-                    onChange={handleNewEmployeeChange}
-                    autoComplete="off"
-                    placeholder="Enter basic salary"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">BRA 1 (Staff Only)</label>
-                  <input
-                    type="number"
-                    name="bra1"
-                    value={newEmployee.bra1}
-                    onChange={handleNewEmployeeChange}
-                    autoComplete="off"
-                    placeholder="Enter BRA 1"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">BRA 2 (Staff Only)</label>
-                  <input
-                    type="number"
-                    name="bra2"
-                    value={newEmployee.bra2}
-                    onChange={handleNewEmployeeChange}
-                    autoComplete="off"
-                    placeholder="Enter BRA 2"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+            {/* Salary Information Section - Conditional rendering based on Employee Category */}
+            {selectedCategoryType === 'staff' && (
+              <div className="animate-fadeIn">
+                <h3 className="text-lg font-semibold mb-3 text-gray-800 border-b pb-2 flex items-center gap-2">
+                  Staff Salary Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Basic Salary <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="basicSalary"
+                      value={newEmployee.basicSalary}
+                      onChange={handleNewEmployeeChange}
+                      autoComplete="off"
+                      placeholder="Enter basic salary"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">BRA 1</label>
+                    <input
+                      type="number"
+                      name="bra1"
+                      value={newEmployee.bra1}
+                      onChange={handleNewEmployeeChange}
+                      autoComplete="off"
+                      placeholder="Enter BRA 1"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">BRA 2</label>
+                    <input
+                      type="number"
+                      name="bra2"
+                      value={newEmployee.bra2}
+                      onChange={handleNewEmployeeChange}
+                      autoComplete="off"
+                      placeholder="Enter BRA 2"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            {/* Salary Information Section 2 */}
-            <div>
-              <h3 className="text-lg font-semibold mb-3 text-gray-800 border-b pb-2 flex items-center gap-2">
-                 Casual Salary Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Day Salary  (Casual Only)</label>
-                  <input
-                    type="number"
-                    name="daySalary"
-                    value={newEmployee.daySalary}
-                    onChange={handleNewEmployeeChange}
-                    autoComplete="off"
-                    placeholder="Enter day salary"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+            )}
+            
+            {selectedCategoryType === 'casual' && (
+              <div className="animate-fadeIn">
+                <h3 className="text-lg font-semibold mb-3 text-gray-800 border-b pb-2 flex items-center gap-2">
+                  Casual Salary Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Day Salary <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="daySalary"
+                      value={newEmployee.daySalary}
+                      onChange={handleNewEmployeeChange}
+                      autoComplete="off"
+                      placeholder="Enter day salary"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
                 </div>
-                
               </div>
-            </div>
+            )}
+            
+            {!selectedCategoryType && (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+                <p className="text-gray-500 text-sm">
+                  ℹ️ Please select an <strong>Employee Category</strong> to view salary fields
+                </p>
+              </div>
+            )}
 
             {/* Bank & Tax Information Section */}
             <div>

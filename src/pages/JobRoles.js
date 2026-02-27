@@ -5,7 +5,6 @@ import { FaEdit, FaTrash, FaPlus, FaEye } from 'react-icons/fa';
 export default function JobRoles() {
   const [jobRoles, setJobRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [employeeCategories, setEmployeeCategories] = useState([]);
   const [selectedJobRole, setSelectedJobRole] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -14,7 +13,6 @@ export default function JobRoles() {
   const [newJobRole, setNewJobRole] = useState({
     roleName: '',
     departmentId: '',
-    employeeCategoriesId: '',
     isActive: true,
   });
   const [loading, setLoading] = useState(false);
@@ -22,7 +20,6 @@ export default function JobRoles() {
   useEffect(() => {
     fetchJobRoles();
     fetchDepartments();
-    fetchEmployeeCategories();
   }, []);
 
   const fetchJobRoles = async () => {
@@ -51,16 +48,7 @@ export default function JobRoles() {
     }
   };
 
-  const fetchEmployeeCategories = async () => {
-    try {
-      const res = await axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/api/empcategories`
-      );
-      setEmployeeCategories(res.data);
-    } catch (err) {
-      console.error('Error fetching employee categories', err);
-    }
-  };
+
 
   const fetchJobRoleById = async (id) => {
     try {
@@ -89,7 +77,6 @@ export default function JobRoles() {
       const payload = {
         roleName: editJobRole.roleName,
         departmentId: parseInt(editJobRole.departmentId),
-        employeeCategoriesId: parseInt(editJobRole.employeeCategoriesId),
         isActive: editJobRole.isActive ?? true
       };
       
@@ -133,7 +120,6 @@ export default function JobRoles() {
       const payload = {
         roleName: newJobRole.roleName,
         departmentId: parseInt(newJobRole.departmentId),
-        employeeCategoriesId: parseInt(newJobRole.employeeCategoriesId),
         isActive: true
       };
       
@@ -150,7 +136,7 @@ export default function JobRoles() {
       await fetchJobRoles();
       
       setIsCreateModalOpen(false);
-      setNewJobRole({ roleName: '', departmentId: '', employeeCategoriesId: '', isActive: true });
+      setNewJobRole({ roleName: '', departmentId: '', isActive: true });
     } catch (err) {
       console.error('Error creating job role', err);
       console.error('Error response:', err.response?.data);
@@ -199,7 +185,6 @@ export default function JobRoles() {
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Role</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee Category</th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -209,7 +194,6 @@ export default function JobRoles() {
                         <tr key={role.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 text-sm text-gray-800">{role.roleName}</td>
                           <td className="px-6 py-4 text-sm text-gray-700">{role.departmentName}</td>
-                          <td className="px-6 py-4 text-sm text-gray-700">{role.employeeCategoriesName}</td>
                           <td className="px-6 py-4 text-center text-sm">
                             <div className="inline-flex items-center gap-2">
                               <button
@@ -236,7 +220,7 @@ export default function JobRoles() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="4" className="px-6 py-8 text-center text-sm text-gray-500">
+                        <td colSpan="3" className="px-6 py-8 text-center text-sm text-gray-500">
                           No job roles found
                         </td>
                       </tr>
@@ -254,7 +238,6 @@ export default function JobRoles() {
                     <div>
                       <div className="text-sm font-medium text-gray-800">{role.roleName}</div>
                       <div className="text-xs text-gray-500 mt-1">Dept: {role.departmentName}</div>
-                      <div className="text-xs text-gray-500">Category: {role.employeeCategoriesName}</div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <button
@@ -319,22 +302,6 @@ export default function JobRoles() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Employee Category</label>
-                <select
-                  name="employeeCategoriesId"
-                  value={editJobRole.employeeCategoriesId || ''}
-                  onChange={handleEditChange}
-                  className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">Select Employee Category</option>
-                  {employeeCategories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.categoryName}
-                    </option>
-                  ))}
-                </select>
-              </div>
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -389,22 +356,6 @@ export default function JobRoles() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Employee Category</label>
-                <select
-                  name="employeeCategoriesId"
-                  value={newJobRole.employeeCategoriesId}
-                  onChange={handleNewChange}
-                  className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">Select Employee Category</option>
-                  {employeeCategories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.categoryName}
-                    </option>
-                  ))}
-                </select>
-              </div>
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -434,7 +385,6 @@ export default function JobRoles() {
             <div className="space-y-3">
               <p><strong>Role Name:</strong> {selectedJobRole.roleName}</p>
               <p><strong>Department:</strong> {selectedJobRole.departmentName}</p>
-              <p><strong>Employee Category:</strong> {selectedJobRole.employeeCategoriesName}</p>
             </div>
             <button
               onClick={() => setIsModalOpen(false)}

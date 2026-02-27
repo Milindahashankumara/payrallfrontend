@@ -4,7 +4,6 @@ import { FaEdit, FaTrash, FaPlus, FaEye, FaSync } from 'react-icons/fa';
 
 export default function Departments() {
   const [departments, setDepartments] = useState([]);
-  const [employeeCategories, setEmployeeCategories] = useState([]);
   const [selectedDept, setSelectedDept] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -13,14 +12,12 @@ export default function Departments() {
   const [newDept, setNewDept] = useState({
     departmentName: '',
     description: '',
-    employeeCategoriesId: '',
     isActive: true,
   });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchDepartments();
-    fetchEmployeeCategories();
   }, []);
 
   const fetchDepartments = async () => {
@@ -37,16 +34,7 @@ export default function Departments() {
     }
   };
 
-  const fetchEmployeeCategories = async () => {
-    try {
-      const res = await axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/api/empcategories`
-      );
-      setEmployeeCategories(res.data);
-    } catch (err) {
-      console.error('Error fetching employee categories', err);
-    }
-  };
+
 
   const fetchDepartmentById = async (id) => {
     try {
@@ -72,14 +60,8 @@ export default function Departments() {
 
   const updateDepartment = async () => {
     try {
-      // Get the category name for the selected ID
-      const selectedCategory = employeeCategories.find(
-        cat => cat.id === parseInt(editDept.employeeCategoriesId)
-      );
-      
       const payload = {
-        ...editDept,
-        employeeCategoriesName: selectedCategory ? selectedCategory.categoryName : ''
+        ...editDept
       };
       
       await axios.put(
@@ -87,12 +69,9 @@ export default function Departments() {
         payload
       );
       
-      // Update the local state with the new data including category name
+      // Update the local state with the new data
       setDepartments((prev) =>
-        prev.map((d) => d.id === editDept.id ? {
-          ...editDept,
-          employeeCategoriesName: selectedCategory ? selectedCategory.categoryName : ''
-        } : d)
+        prev.map((d) => d.id === editDept.id ? editDept : d)
       );
       setIsEditModalOpen(false);
     } catch (err) {
@@ -120,14 +99,8 @@ export default function Departments() {
 
   const createDepartment = async () => {
     try {
-      // Get the category name for the selected ID
-      const selectedCategory = employeeCategories.find(
-        cat => cat.id === parseInt(newDept.employeeCategoriesId)
-      );
-      
       const payload = {
-        ...newDept,
-        employeeCategoriesName: selectedCategory ? selectedCategory.categoryName : ''
+        ...newDept
       };
       
       const res = await axios.post(
@@ -135,23 +108,17 @@ export default function Departments() {
         payload
       );
       
-      // Add the new department to the state with the category name
-      setDepartments((prev) => [...prev, {
-        ...res.data,
-        employeeCategoriesName: selectedCategory ? selectedCategory.categoryName : ''
-      }]);
+      // Add the new department to the state
+      setDepartments((prev) => [...prev, res.data]);
       
       setIsCreateModalOpen(false);
-      setNewDept({ departmentName: '', description: '', employeeCategoriesId: '', isActive: true });
+      setNewDept({ departmentName: '', description: '', isActive: true });
     } catch (err) {
       console.error('Error creating department', err);
     }
   };
 
-  const getCategoryName = (id) => {
-    const category = employeeCategories.find(cat => cat.id === id);
-    return category ? category.categoryName : 'Unknown Category';
-  };
+
 
   return (
     <div className="min-h-screen p-6 bg-gray-50">
@@ -202,7 +169,6 @@ export default function Departments() {
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department Name</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee Category</th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -212,7 +178,6 @@ export default function Departments() {
                         <tr key={dept.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 text-sm text-gray-800">{dept.departmentName}</td>
                           <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-xs">{dept.description}</td>
-                          <td className="px-6 py-4 text-sm text-gray-700">{dept.employeeCategoriesName || getCategoryName(dept.employeeCategoriesId)}</td>
                           <td className="px-6 py-4 text-center text-sm">
                             <div className="inline-flex items-center gap-2">
                               <button
@@ -242,7 +207,7 @@ export default function Departments() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="4" className="px-6 py-8 text-center text-sm text-gray-500">
+                        <td colSpan="3" className="px-6 py-8 text-center text-sm text-gray-500">
                           No departments found
                         </td>
                       </tr>
@@ -260,7 +225,6 @@ export default function Departments() {
                     <div>
                       <div className="text-sm font-medium text-gray-800">{dept.departmentName}</div>
                       <div className="text-xs text-gray-500 truncate max-w-xs">{dept.description}</div>
-                      <div className="text-xs text-gray-500 mt-1">Category: {dept.employeeCategoriesName || getCategoryName(dept.employeeCategoriesId)}</div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <button
@@ -323,22 +287,6 @@ export default function Departments() {
                   className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Employee Category</label>
-                <select
-                  name="employeeCategoriesId"
-                  value={editDept.employeeCategoriesId || ''}
-                  onChange={handleEditChange}
-                  className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">Select Employee Category</option>
-                  {employeeCategories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.categoryName}
-                    </option>
-                  ))}
-                </select>
-              </div>
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -388,22 +336,6 @@ export default function Departments() {
                   className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Employee Category</label>
-                <select
-                  name="employeeCategoriesId"
-                  value={newDept.employeeCategoriesId}
-                  onChange={handleNewChange}
-                  className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">Select Employee Category</option>
-                  {employeeCategories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.categoryName}
-                    </option>
-                  ))}
-                </select>
-              </div>
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -433,8 +365,6 @@ export default function Departments() {
             <div className="space-y-3">
               <p><strong>Name:</strong> {selectedDept.departmentName}</p>
               <p><strong>Description:</strong> {selectedDept.description}</p>
-              <p><strong>Employee Category:</strong> {selectedDept.employeeCategoriesName || getCategoryName(selectedDept.employeeCategoriesId)}</p>
-              {/* <p><strong>Status:</strong> {selectedDept.isActive ? 'Active' : 'Inactive'}</p> */}
             </div>
             <button
               onClick={() => setIsModalOpen(false)}

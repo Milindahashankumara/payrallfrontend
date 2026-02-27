@@ -442,7 +442,7 @@ export default function SalaryReports() {
               </tr>
               <tr>
                 <td className="border border-gray-400 p-1 pl-3">Basic Salary</td>
-                <td className="border border-gray-400 p-1 text-right">{formatCurrency(report.basicStationarySal)}</td>
+                <td className="border border-gray-400 p-1 text-right">{formatCurrency(report.basicSala)}</td>
               </tr>
               <tr>
                 <td className="border border-gray-400 p-1 pl-3">No Pay Amount</td>
