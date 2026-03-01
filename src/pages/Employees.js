@@ -260,6 +260,15 @@ const fetchJobRolesByDepartment = async (departmentId) => {
     return selectedCategory?.categoryName?.toLowerCase() || null;
   }, [newEmployee.employeeCategoriesID, employeeCategories]);
 
+  // Determine the edit employee category type (Staff or Casual)
+  const editCategoryType = useMemo(() => {
+    if (!editEmployee.employeeCategoriesID) return null;
+    const selectedCategory = employeeCategories.find(
+      cat => cat.id === parseInt(editEmployee.employeeCategoriesID)
+    );
+    return selectedCategory?.categoryName?.toLowerCase() || null;
+  }, [editEmployee.employeeCategoriesID, employeeCategories]);
+
   const updateEmployee = async () => {
     try {
       // Convert string IDs back to numbers for the API
@@ -647,22 +656,6 @@ const deleteEmployee = async (id) => {
                   </select>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Employee Category</label>
-                  <select
-                    name="employeeCategoriesID"
-                    value={editEmployee.employeeCategoriesID || ""}
-                    onChange={handleEditChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Category</option>
-                    {employeeCategories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.categoryName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
                 {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Department ID</label>
                   <input
@@ -711,56 +704,101 @@ const deleteEmployee = async (id) => {
               <h3 className="text-lg font-semibold mb-3 text-gray-800 border-b pb-2 flex items-center gap-2">
                  Salary Information
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Basic Salary (Staff Only)</label>
-                  <input
-                    type="number"
-                    name="basicSalary"
-                    value={editEmployee.basicSalary || ""}
-                    onChange={handleEditChange}
-                    autoComplete="off"
-                    placeholder="Enter basic salary"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Day Salary (Casual Only)</label>
-                  <input
-                    type="number"
-                    name="daySalary"
-                    value={editEmployee.daySalary || ""}
-                    onChange={handleEditChange}
-                    autoComplete="off"
-                    placeholder="Enter day salary"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">BRA 1 (Staff Only)</label>
-                  <input
-                    type="number"
-                    name="bra1"
-                    value={editEmployee.bra1 || ""}
-                    onChange={handleEditChange}
-                    autoComplete="off"
-                    placeholder="Enter BRA 1"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">BRA 2 (Staff Only)</label>
-                  <input
-                    type="number"
-                    name="bra2"
-                    value={editEmployee.bra2 || ""}
-                    onChange={handleEditChange}
-                    autoComplete="off"
-                    placeholder="Enter BRA 2"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
+              
+              {/* Employee Category Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Employee Category *</label>
+                <select
+                  name="employeeCategoriesID"
+                  value={editEmployee.employeeCategoriesID || ""}
+                  onChange={handleEditChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Select Category</option>
+                  {employeeCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.categoryName}
+                    </option>
+                  ))}
+                </select>
               </div>
+
+              {/* Staff Salary Fields */}
+              {editCategoryType === 'staff' && (
+                <div className="animate-fadeIn">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Basic Salary <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="basicSalary"
+                        value={editEmployee.basicSalary || ""}
+                        onChange={handleEditChange}
+                        autoComplete="off"
+                        placeholder="Enter basic salary"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">BRA 1</label>
+                      <input
+                        type="number"
+                        name="bra1"
+                        value={editEmployee.bra1 || ""}
+                        onChange={handleEditChange}
+                        autoComplete="off"
+                        placeholder="Enter BRA 1"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">BRA 2</label>
+                      <input
+                        type="number"
+                        name="bra2"
+                        value={editEmployee.bra2 || ""}
+                        onChange={handleEditChange}
+                        autoComplete="off"
+                        placeholder="Enter BRA 2"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Casual Salary Fields */}
+              {editCategoryType === 'casual' && (
+                <div className="animate-fadeIn">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Day Salary <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="daySalary"
+                        value={editEmployee.daySalary || ""}
+                        onChange={handleEditChange}
+                        autoComplete="off"
+                        placeholder="Enter day salary"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Info message when no category selected */}
+              {!editCategoryType && (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+                  <p className="text-gray-500 text-sm">
+                    ℹ️ Please select an <strong>Employee Category</strong> to view salary fields
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Bank & Tax Information Section */}
